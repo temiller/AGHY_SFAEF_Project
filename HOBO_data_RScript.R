@@ -16,11 +16,12 @@ library(ggplot2)
 library(reshape)
 library(zoo)
 
-## Need to merge the May 2016 HOBO data with the March 2016 version that goes from Nov 2014 to March 2016
+## Need to merge the May 2016 HOBO data with the March 2016 version that goes from Nov 2014 to March 2015
 
 ## set working directory 
 setwd("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project")
 
+## test for git
 
 HOBO.all <- read.csv("AGHYAGPEMarch2016.csv" )
 HOBO.part <- read.csv("AGHYAGPEMay2016.csv")
