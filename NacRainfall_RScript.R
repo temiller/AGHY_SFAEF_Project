@@ -13,7 +13,7 @@ library(ggplot2)
 library(grid)
 library(gridExtra)
 
-setwd("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY-Modeling")
+setwd("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project")
 
 ## read in irrigation data
 
