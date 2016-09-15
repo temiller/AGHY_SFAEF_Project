@@ -1,22 +1,37 @@
-##
-##
-##
+## Title: AGHY SFAEF Endophyte Frequency Change
+## Authors: Tom Miller and Marion Donald
+## Purpose: Develop models for AGHY endophyte frequency change 
+## Date Started: September 8, 2016
+## Date Updated: September 15, 2016
 ##########################################################################
 
 library(xlsx)
-library(dplyr)
 library(plyr)
+library(dplyr)
 library(lme4)
 library(bbmle)
 logit<-function(x){exp(x)/(1+exp(x))}
 
-## read in AGHY plot info
+## (Marion) set working directory
+setwd("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project")
+
+## (Tom) read in AGHY plot info
 AGHY.plots<-read.xlsx("D:\\Dropbox\\Lab Documents\\Documents\\Grass\\SFAEF life history experiment\\Data\\AGHY_SFAEF_life_history_expt.xlsx",
                            sheetName="Plot-level data")
 
-## read in AGHY agrinostics survey
+## (Tom) read in AGHY agrinostics survey
 AGHY.immunoblot<-read.xlsx("D:\\Dropbox\\Lab Documents\\Documents\\Grass\\SFAEF life history experiment\\Data\\AGHY_SFAEF_life_history_expt.xlsx",
                            sheetName="Endophyte Survey")
+
+## (Marion) read in AGHY plot info 
+AGHY.plots<-read.xlsx("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project/AGHY_SFAEF_life_history_expt.xlsx",
+                      sheetName="Plot-level data")
+
+## (Marion) read in AGHY agrinostics survey
+AGHY.immunoblot<-read.xlsx("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project/AGHY_SFAEF_life_history_expt.xlsx",
+                           sheetName="Endophyte Survey")
+
+
 
 ## apply function to get subplot-level frequency
 AGHY<-ddply(AGHY.immunoblot, c("year_t","plot", "subplot"), summarize, 
