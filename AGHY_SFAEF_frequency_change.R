@@ -46,8 +46,27 @@ AGHY$lib_freq<-AGHY$E_plus_liberal/AGHY$total
 ## Merge these two types of info
 AGHY.merge<-merge(AGHY.plots,AGHY,by="plot")
 
+## create a unique ID of plot and subplot
+AGHY.merge$ID<- paste(AGHY.merge$plot, AGHY.merge$subplot, sep ="_")
 
+## select the relevant columns
+AGHY.new<-AGHY.merge[, c(1,4,5,6,9,10,14:16)]
+## copy this dataframe into a new one so that year_t1 and the frequencies can be labeled
+AGHY.freq.1<-AGHY.new
+## creat the year_t1 column from the year_t column
+AGHY.freq.1$year_t1<-AGHY.freq.1$year_t+1
+## rename the year_t frequencies
+names(AGHY.freq.1)[names(AGHY.freq.1) == "con_freq"]<- "con_freq_t"
+names(AGHY.freq.1)[names(AGHY.freq.1) == "lib_freq"]<- "lib_freq_t"
+## assign the year t to the year t1 to match with the AGHY.freq.1 dataframe
+AGHY.new$year_t1<-AGHY.new$year_t
+## rename the year_t1 frequencies
+names(AGHY.new)[names(AGHY.new) == "con_freq"]<- "con_freq_t1"
+names(AGHY.new)[names(AGHY.new) == "lib_freq"]<- "lib_freq_t1"
 
+## New data frame with years t and t+1 and their frequencies (2013 and 2016 as year_t are not in this -- should they be added?)
+AGHY.total<-merge(AGHY.freq.1, AGHY.new[,c(7:10)], by =c("ID", "year_t1"))
+AGHY.total<-AGHY.total[,c(1,3,8,4:7,2,9:12)]
 
 ### example analysis for 2013/2014 change
 AGHY1314<-subset(AGHY.merge,year_t==2014)
