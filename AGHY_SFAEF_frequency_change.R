@@ -66,6 +66,7 @@ names(AGHY.new)[names(AGHY.new) == "lib_freq"]<- "lib_freq_t1"
 
 ## New data frame with years t and t+1 and their frequencies (2013 and 2016 as year_t are not in this -- should they be added?)
 AGHY.total<-merge(AGHY.freq.1, AGHY.new[,c(7:10)], by =c("ID", "year_t1"))
+## re-organizing the columns so they make sense visually 
 AGHY.total<-AGHY.total[,c(1,3,8,4:7,2,9:12)]
 
 ### example analysis for 2013/2014 change
