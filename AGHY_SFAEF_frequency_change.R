@@ -39,9 +39,14 @@ AGHY<-ddply(AGHY.immunoblot, c("year_t","plot", "subplot"), summarize,
             E_plus_liberal = sum(agri_liberal),
             E_plus_conservative = sum(agri_conservative))
 
+## Create the frequency per subplot (Conservative/total and Liberal/total)
+AGHY$con_freq<-AGHY$E_plus_conservative/AGHY$total
+AGHY$lib_freq<-AGHY$E_plus_liberal/AGHY$total
 
 ## Merge these two types of info
 AGHY.merge<-merge(AGHY.plots,AGHY,by="plot")
+
+
 
 
 ### example analysis for 2013/2014 change
