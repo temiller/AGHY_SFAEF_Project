@@ -2,7 +2,7 @@
 ## Authors: Tom Miller and Marion Donald
 ## Purpose: Develop models for AGHY endophyte frequency change 
 ## Date Started: September 8, 2016
-## Date Updated: September 15, 2016
+## Date Updated: September 26, 2016
 ##########################################################################
 
 library(xlsx)
@@ -64,10 +64,28 @@ AGHY.new$year_t1<-AGHY.new$year_t
 names(AGHY.new)[names(AGHY.new) == "con_freq"]<- "con_freq_t1"
 names(AGHY.new)[names(AGHY.new) == "lib_freq"]<- "lib_freq_t1"
 
-## New data frame with years t and t+1 and their frequencies (2013 and 2016 as year_t are not in this -- should they be added?)
+
+## New data frame with years t and t+1 and their frequencies 
 AGHY.total<-merge(AGHY.freq.1, AGHY.new[,c(7:10)], by =c("ID", "year_t1"))
 ## re-organizing the columns so they make sense visually 
 AGHY.total<-AGHY.total[,c(1,3,8,4:7,2,9:12)]
+
+## get the 2013 data -- add in 2013 year to AGHY.plots, and create columns to match the AGHY.total dataframe
+AGHY.plots$year_t<-2013
+AGHY.plots1<- AGHY.plots[c(1:61),c(1,4,5,6,9)]
+AGHY.plots1$year_t1<-2014
+AGHY.plots1$con_freq_t <-NA
+AGHY.plots1$lib_freq_t<-NA
+AGHY.plots1$con_freq_t1<-NA
+AGHY.plots1$lib_freq_t1<-NA
+AGHY.plots1$ID<-NA
+AGHY.plots1$subplot<-NA
+## remove the farm plots
+AGHY.plots1<-AGHY.plots1[AGHY.plots1$transmission != "Farm",]
+
+## Combine the 2013 initial frequency data with the dataframe that has subplot frequencies
+AGHY.totals<-rbind(AGHY.total,AGHY.plots1)
+
 
 ### example analysis for 2013/2014 change
 AGHY1314<-subset(AGHY.merge,year_t==2014)
