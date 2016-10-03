@@ -12,8 +12,6 @@ library(lme4)
 library(bbmle)
 logit<-function(x){exp(x)/(1+exp(x))}
 
-## (Marion) set working directory
-setwd("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project")
 
 ## (Tom) read in AGHY plot info
 AGHY.plots<-read.xlsx("D:\\Dropbox\\Lab Documents\\Documents\\Grass\\SFAEF life history experiment\\Data\\AGHY_SFAEF_life_history_expt.xlsx",
@@ -22,6 +20,9 @@ AGHY.plots<-read.xlsx("D:\\Dropbox\\Lab Documents\\Documents\\Grass\\SFAEF life 
 ## (Tom) read in AGHY agrinostics survey
 AGHY.immunoblot<-read.xlsx("D:\\Dropbox\\Lab Documents\\Documents\\Grass\\SFAEF life history experiment\\Data\\AGHY_SFAEF_life_history_expt.xlsx",
                            sheetName="Endophyte Survey")
+
+## (Marion) set working directory
+setwd("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project")
 
 ## (Marion) read in AGHY plot info 
 AGHY.plots<-read.xlsx("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project/AGHY_SFAEF_life_history_expt.xlsx",
@@ -50,7 +51,7 @@ AGHY.merge<-merge(AGHY.plots,AGHY,by="plot")
 AGHY.merge$ID<- paste(AGHY.merge$plot, AGHY.merge$subplot, sep ="_")
 
 ## select the relevant columns
-AGHY.new<-AGHY.merge[, c(1,4,5,6,9,10,14:16)]
+AGHY.new<-AGHY.merge[, c(1,4,5,6,9,10,11,14:16)]
 ## copy this dataframe into a new one so that year_t1 and the frequencies can be labeled
 AGHY.freq.1<-AGHY.new
 ## creat the year_t1 column from the year_t column
@@ -58,17 +59,20 @@ AGHY.freq.1$year_t1<-AGHY.freq.1$year_t+1
 ## rename the year_t frequencies
 names(AGHY.freq.1)[names(AGHY.freq.1) == "con_freq"]<- "con_freq_t"
 names(AGHY.freq.1)[names(AGHY.freq.1) == "lib_freq"]<- "lib_freq_t"
-## assign the year t to the year t1 to match with the AGHY.freq.1 dataframe
+names(AGHY.freq.1)[names(AGHY.freq.1)=="total"]<-"total_scored_t"
+## assign the year t to the year t1 to match with the AGHY.freq.1 dataframe (and do the same with total seeds scored)
 AGHY.new$year_t1<-AGHY.new$year_t
+names(AGHY.new)[names(AGHY.new) == "total"]<-"total_scored_t1"
 ## rename the year_t1 frequencies
 names(AGHY.new)[names(AGHY.new) == "con_freq"]<- "con_freq_t1"
 names(AGHY.new)[names(AGHY.new) == "lib_freq"]<- "lib_freq_t1"
 
 
 ## New data frame with years t and t+1 and their frequencies 
-AGHY.total<-merge(AGHY.freq.1, AGHY.new[,c(7:10)], by =c("ID", "year_t1"))
+AGHY.total<-merge(AGHY.freq.1, AGHY.new[,c(7:11)], by =c("ID", "year_t1"))
 ## re-organizing the columns so they make sense visually 
-AGHY.total<-AGHY.total[,c(1,3,8,4:7,2,9:12)]
+AGHY.total<-AGHY.total[,c(1,3,8,4:7,2,9:14)]
+
 
 ## get the 2013 data -- add in 2013 year to AGHY.plots, and create columns to match the AGHY.total dataframe
 AGHY.plots$year_t<-2013
@@ -120,6 +124,65 @@ lines(1:10,logit(+1+0.5*(1:10)),type="l",col="red")
 par(mfrow=c(2,1))
 hist(AGHY1314$freq_t1_liberal[AGHY1314$water=="Add"])
 hist(AGHY1314$freq_t1_liberal[AGHY1314$water=="Control"])
+dev.off()
 
-### 
-AGHY1415<-subset(AGHY.merge,year_t==2015)
+## select just the 2014-2015 data
+AGHY1415<-subset(AGHY.total,year_t==2014)
+
+## fit a binomial water to the E+ freq in 2015 dependent on E+ freq 2014, water, random effect of plot, and weighted by sample size (# seeds scored)
+
+endo.model.14.0<-glmer(lib_freq_t1 ~ lib_freq_t + (1|plot), weights = total_scored_t1, family = "binomial", data=AGHY1415)
+endo.model.14.1<-glmer(lib_freq_t1 ~ lib_freq_t + water + (1|plot), weights = total_scored_t1, family = "binomial", data=AGHY1415)
+endo.model.14.2<-glmer(lib_freq_t1 ~ lib_freq_t * water + (1|plot), weights = total_scored_t1, family = "binomial", data=AGHY1415)
+AICtab(endo.model.14.0,endo.model.14.1,endo.model.14.2)
+
+
+plot(AGHY1415$lib_freq_t,
+     AGHY1415$lib_freq_t1)
+abline(0,1)
+lines(seq(0,1,0.01),
+      logit(fixef(endo.model.14.2)[1] + fixef(endo.model.14.2)[2]*seq(0,1,0.01)),
+      lwd=4,col="blue")
+lines(seq(0,1,0.01),
+      logit((fixef(endo.model.14.2)[1] + fixef(endo.model.14.2)[3]) + fixef(endo.model.14.2)[2]*seq(0,1,0.01)),
+      lwd=4,col="red")
+
+
+logit(fixef(endo.model.14.2)[1])
+logit(fixef(endo.model.14.2)[1]+ fixef(endo.model.15.1)[3])
+
+plot(1:10,logit(0+0.5*(1:10)),type="l")
+lines(1:10,logit(+1+0.5*(1:10)),type="l",col="red")
+
+par(mfrow=c(2,1))
+hist(AGHY1415$lib_freq_t1[AGHY1415$water=="Add"])
+hist(AGHY1415$lib_freq_t1[AGHY1415$water=="Control"])
+
+
+## fit a binomial water to the E+ freq in 2016 dependent on E+ freq 2015, water, random effect of plot, and weighted by sample size (# seeds scored)
+AGHY1516<-subset(AGHY.total,year_t==2015)
+endo.model.15.0<-glmer(lib_freq_t1 ~ lib_freq_t + (1|plot), weights = total_scored_t1, family = "binomial", data=AGHY1516)
+endo.model.15.1<-glmer(lib_freq_t1 ~ lib_freq_t + water + (1|plot), weights = total_scored_t1, family = "binomial", data=AGHY1516)
+endo.model.15.2<-glmer(lib_freq_t1 ~ lib_freq_t * water + (1|plot), weights = total_scored_t1, family = "binomial", data=AGHY1516)
+AICtab(endo.model.15.0,endo.model.15.1,endo.model.15.2)
+
+plot(AGHY1516$lib_freq_t,
+     AGHY1516$lib_freq_t1)
+abline(0,1)
+lines(seq(0,1,0.01),
+      logit(fixef(endo.model.15.1)[1] + fixef(endo.model.15.1)[2]*seq(0,1,0.01)),
+      lwd=4,col="blue")
+lines(seq(0,1,0.01),
+      logit((fixef(endo.model.15.1)[1] + fixef(endo.model.15.1)[3]) + fixef(endo.model.15.1)[2]*seq(0,1,0.01)),
+      lwd=4,col="red")
+
+logit(fixef(endo.model.15.1)[1])
+logit(fixef(endo.model.15.1)[1]+ fixef(endo.model.15.1)[3])
+
+plot(1:10,logit(0+0.5*(1:10)),type="l")
+lines(1:10,logit(+1+0.5*(1:10)),type="l",col="red")
+
+par(mfrow=c(2,1))
+hist(AGHY1516$lib_freq_t1[AGHY1516$water=="Add"])
+hist(AGHY1516$lib_freq_t1[AGHY1516$water=="Control"])
+dev.off()
