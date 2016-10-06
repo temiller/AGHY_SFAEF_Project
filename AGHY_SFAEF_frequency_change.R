@@ -74,21 +74,7 @@ AGHY.total<-merge(AGHY.freq.1, AGHY.new[,c(7:11)], by =c("ID", "year_t1"))
 AGHY.total<-AGHY.total[,c(1,3,8,4:7,2,9:14)]
 
 
-## get the 2013 data -- add in 2013 year to AGHY.plots, and create columns to match the AGHY.total dataframe
-AGHY.plots$year_t<-2013
-AGHY.plots1<- AGHY.plots[c(1:61),c(1,4,5,6,9)]
-AGHY.plots1$year_t1<-2014
-AGHY.plots1$con_freq_t <-NA
-AGHY.plots1$lib_freq_t<-NA
-AGHY.plots1$con_freq_t1<-NA
-AGHY.plots1$lib_freq_t1<-NA
-AGHY.plots1$ID<-NA
-AGHY.plots1$subplot<-NA
-## remove the farm plots
-AGHY.plots1<-AGHY.plots1[AGHY.plots1$transmission != "Farm",]
 
-## Combine the 2013 initial frequency data with the dataframe that has subplot frequencies
-AGHY.totals<-rbind(AGHY.total,AGHY.plots1)
 
 
 ### example analysis for 2013/2014 change
@@ -101,7 +87,7 @@ endo.model1<-glmer(cbind(E_plus_liberal,(total-E_plus_liberal)) ~ target_init_fr
                    family="binomial", data=AGHY1314)
 endo.model2<-glmer(cbind(E_plus_liberal,(total-E_plus_liberal)) ~ target_init_freq * water + (target_init_freq|plot),
                    family="binomial", data=AGHY1314)
-AICtab(endo.model0,endo.model1,endo.model2)
+AICtab(endo.model0,endo.model1,endo.model2,weights=T)
 
 AGHY1314$freq_t1_liberal<-AGHY1314$E_plus_liberal / AGHY1314$total
 plot(AGHY1314$target_init_freq,
@@ -134,17 +120,21 @@ AGHY1415<-subset(AGHY.total,year_t==2014)
 endo.model.14.0<-glmer(lib_freq_t1 ~ lib_freq_t + (1|plot), weights = total_scored_t1, family = "binomial", data=AGHY1415)
 endo.model.14.1<-glmer(lib_freq_t1 ~ lib_freq_t + water + (1|plot), weights = total_scored_t1, family = "binomial", data=AGHY1415)
 endo.model.14.2<-glmer(lib_freq_t1 ~ lib_freq_t * water + (1|plot), weights = total_scored_t1, family = "binomial", data=AGHY1415)
-AICtab(endo.model.14.0,endo.model.14.1,endo.model.14.2)
+AICtab(endo.model.14.0,endo.model.14.1,endo.model.14.2,weights=T)
 
 
 plot(AGHY1415$lib_freq_t,
-     AGHY1415$lib_freq_t1)
+     AGHY1415$lib_freq_t1,type="n")
+points(AGHY1415$lib_freq_t[AGHY1415$water=="Control"],
+       AGHY1415$lib_freq_t1[AGHY1415$water=="Control"],pch=21,bg="red")
+points(AGHY1415$lib_freq_t[AGHY1415$water=="Add"],
+       AGHY1415$lib_freq_t1[AGHY1415$water=="Add"],pch=21,bg="blue")
 abline(0,1)
 lines(seq(0,1,0.01),
       logit(fixef(endo.model.14.2)[1] + fixef(endo.model.14.2)[2]*seq(0,1,0.01)),
       lwd=4,col="blue")
 lines(seq(0,1,0.01),
-      logit((fixef(endo.model.14.2)[1] + fixef(endo.model.14.2)[3]) + fixef(endo.model.14.2)[2]*seq(0,1,0.01)),
+      logit((fixef(endo.model.14.2)[1] + fixef(endo.model.14.2)[3]) + (fixef(endo.model.14.2)[2] + fixef(endo.model.14.2)[4])*seq(0,1,0.01)),
       lwd=4,col="red")
 
 
@@ -175,6 +165,13 @@ lines(seq(0,1,0.01),
 lines(seq(0,1,0.01),
       logit((fixef(endo.model.15.1)[1] + fixef(endo.model.15.1)[3]) + fixef(endo.model.15.1)[2]*seq(0,1,0.01)),
       lwd=4,col="red")
+
+plot(AGHY1516$lib_freq_t,
+     AGHY1516$lib_freq_t1,type="n")
+points(AGHY1516$lib_freq_t[AGHY1516$water=="Control"],
+       AGHY1516$lib_freq_t1[AGHY1516$water=="Control"],pch=21,bg="red")
+points(AGHY1516$lib_freq_t[AGHY1516$water=="Add"],
+       AGHY1516$lib_freq_t1[AGHY1516$water=="Add"],pch=21,bg="blue")
 
 logit(fixef(endo.model.15.1)[1])
 logit(fixef(endo.model.15.1)[1]+ fixef(endo.model.15.1)[3])
