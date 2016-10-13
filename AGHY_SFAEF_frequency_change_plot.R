@@ -13,6 +13,7 @@ library(bbmle)
 logit<-function(x){exp(x)/(1+exp(x))}
 
 
+
 ## (Tom) read in AGHY plot info
 AGHY.plots<-read.xlsx("D:\\Dropbox\\Lab Documents\\Documents\\Grass\\SFAEF life history experiment\\Data\\AGHY_SFAEF_life_history_expt.xlsx",
                            sheetName="Plot-level data")
@@ -129,23 +130,13 @@ points(AGHY1415$lib_freq_t[AGHY1415$water=="Control"],
 points(AGHY1415$lib_freq_t[AGHY1415$water=="Add"],
        AGHY1415$lib_freq_t1[AGHY1415$water=="Add"],pch=21,bg="blue")
 abline(0,1)
-#lines(seq(0,1,0.01),
- #     logit(fixef(endo.model.14.2)[1] + fixef(endo.model.14.2)[2]*seq(0,1,0.01)),
-  #    lwd=4,col="blue")
-#lines(seq(0,1,0.01),
- #     logit((fixef(endo.model.14.2)[1] + fixef(endo.model.14.2)[3]) + (fixef(endo.model.14.2)[2] + fixef(endo.model.14.2)[4])*seq(0,1,0.01)),
-  #    lwd=4,col="red")
+lines(seq(0,1,0.01),
+      logit(coef(endo.model.14.2)[1] + (coef(endo.model.14.2)[2]*seq(0,1,0.01))),
+      col = "blue",lwd=4)
+lines(seq(0,1,0.01),
+      logit(coef(endo.model.14.2)[1] + coef(endo.model.14.2)[3] + (coef(endo.model.14.2)[2]+ coef(endo.model.14.2)[4]*seq(0,1,0.01))),
+                          col = "red",lwd=4)
 
-
-#logit(fixef(endo.model.14.2)[1])
-#logit(fixef(endo.model.14.2)[1]+ fixef(endo.model.15.1)[3])
-
-#plot(1:10,logit(0+0.5*(1:10)),type="l")
-#lines(1:10,logit(+1+0.5*(1:10)),type="l",col="red")
-
-#par(mfrow=c(2,1))
-#hist(AGHY1415$lib_freq_t1[AGHY1415$water=="Add"])
-#hist(AGHY1415$lib_freq_t1[AGHY1415$water=="Control"])
 
 
 ## fit a binomial water to the E+ freq in 2016 dependent on E+ freq 2015, water, and weighted by sample size (# seeds scored) at the plot level
@@ -153,17 +144,12 @@ AGHY1516<-subset(AGHY.total,year_t==2015)
 endo.model.15.0<-glm(lib_freq_t1 ~ lib_freq_t, weights = total_scored_t1, family = "binomial", data=AGHY1516)
 endo.model.15.1<-glm(lib_freq_t1 ~ lib_freq_t + water, weights = total_scored_t1, family = "binomial", data=AGHY1516)
 endo.model.15.2<-glm(lib_freq_t1 ~ lib_freq_t * water, weights = total_scored_t1, family = "binomial", data=AGHY1516)
-AICtab(endo.model.15.0,endo.model.15.1,endo.model.15.2)
+AICtab(endo.model.15.0,endo.model.15.1,endo.model.15.2, weights=T)
 
 plot(AGHY1516$lib_freq_t,
      AGHY1516$lib_freq_t1)
 abline(0,1)
-#lines(seq(0,1,0.01),
- #     logit(fixef(endo.model.15.1)[1] + fixef(endo.model.15.1)[2]*seq(0,1,0.01)),
-  #    lwd=4,col="blue")
-#lines(seq(0,1,0.01),
- #     logit((fixef(endo.model.15.1)[1] + fixef(endo.model.15.1)[3]) + fixef(endo.model.15.1)[2]*seq(0,1,0.01)),
-  #    lwd=4,col="red")
+
 
 plot(AGHY1516$lib_freq_t,
      AGHY1516$lib_freq_t1,type="n")
@@ -172,16 +158,12 @@ points(AGHY1516$lib_freq_t[AGHY1516$water=="Control"],
 points(AGHY1516$lib_freq_t[AGHY1516$water=="Add"],
        AGHY1516$lib_freq_t1[AGHY1516$water=="Add"],pch=21,bg="blue")
 abline(0,1)
+lines(seq(0,1,0.01),
+      logit(coef(endo.model.15.2)[1] + (coef(endo.model.15.2)[2]*seq(0,1,0.01))),
+      col = "blue",lwd=4)
+lines(seq(0,1,0.01),
+      logit(coef(endo.model.15.2)[1] + coef(endo.model.15.2)[3] + (coef(endo.model.15.2)[2]+ coef(endo.model.15.2)[4]*seq(0,1,0.01))),
+      col = "red",lwd=4) ## this one doesn't look right to me (?)
 
 
-#logit(fixef(endo.model.15.1)[1])
-#logit(fixef(endo.model.15.1)[1]+ fixef(endo.model.15.1)[3])
 
-#plot(1:10,logit(0+0.5*(1:10)),type="l")
-#lines(1:10,logit(+1+0.5*(1:10)),type="l",col="red")
-
-#par(mfrow=c(2,1))
-
-#hist(AGHY1516$lib_freq_t1[AGHY1516$water=="Add"])
-#hist(AGHY1516$lib_freq_t1[AGHY1516$water=="Control"])
-#dev.off()
