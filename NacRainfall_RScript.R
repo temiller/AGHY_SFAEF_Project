@@ -104,4 +104,5 @@ rainfall.season<-rainfall.season[-c(7:8),]
 ggplot(rainfall.season, aes(yr_season, actual))+
   geom_bar(aes(fill = season), position = "dodge", stat = "identity")+
   scale_fill_manual(values = c("cornflowerblue", "firebrick"))+
-  labs(x = "Growing Season", y = "Total Precipitation (in)")
+  labs(x = "Growing Season", y = "Total Precipitation (in)")+
+  theme_bw() + theme(panel.border = element_blank())
