@@ -12,6 +12,7 @@ library(scales)
 library(ggplot2)
 library(grid)
 library(gridExtra)
+library(plyr)
 
 setwd("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project")
 
@@ -67,3 +68,40 @@ p.rainfall1<- ggplot(rainfall, aes(Dates)) +
 
 ### multiplot
 grid.arrange(p.rainfall1, p.Hobo.all, ncol = 2)
+
+###### new figures for rainfall by season #####
+rainfall$season<-NA
+rainfall$season<- ifelse (rainfall$Month == "January", "cool", 
+                         ifelse (rainfall$Month == "February", "cool",
+                                ifelse (rainfall$Month == "March", "cool",
+                                       ifelse (rainfall$Month == "April", "cool",
+                                              ifelse (rainfall$Month == "May", "warm",
+                                                     ifelse (rainfall$Month == "June", "warm",
+                                                            ifelse (rainfall$Month == "July", "warm",
+                                                                   ifelse (rainfall$Month == "August", "warm",
+                                                                           ifelse(rainfall$Month == "September", "warm",
+                                                                                  ifelse(rainfall$Month == "October","cool",
+                                                                                         ifelse(rainfall$Month == "November", "cool",
+                                                                                                ifelse(rainfall$Month == "December", "cool","other"))))))))))))
+
+
+## take out Jan-April 2013
+rainfall<-rainfall[-c(1:4),]
+rainfall$yr_season<-NA
+
+## create season and year associations
+list1<- c("13.14","13.14","13.14","13.14","13.14","13.14","13.14","13.14","13.14","13.14","13.14","13.14",
+          "14.15","14.15","14.15","14.15","14.15","14.15","14.15","14.15","14.15","14.15","14.15","14.15",
+          "15.16","15.16","15.16","15.16","15.16","15.16","15.16","15.16","15.16","15.16","15.16","15.16",
+          "16.17", "16.17", "16.17", "16.17", "16.17", "16.17", "16.17", "16.17")
+rainfall$yr_season<-list1
+
+## get the total amount of rainfall per season by growing season 
+rainfall.season<-ddply(rainfall, c("yr_season", "season"), summarize,
+                       actual = sum(Actual))
+rainfall.season<-rainfall.season[-c(7:8),]
+
+ggplot(rainfall.season, aes(yr_season, actual))+
+  geom_bar(aes(fill = season), position = "dodge", stat = "identity")+
+  scale_fill_manual(values = c("cornflowerblue", "firebrick"))+
+  labs(x = "Growing Season", y = "Total Precipitation (in)")
