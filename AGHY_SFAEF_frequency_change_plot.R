@@ -95,7 +95,7 @@ AGHY.total<-AGHY.total[,c(1,3:8,2,9:11)]
 #abline(0,1)
 #lines(seq(0,1,0.01),
 #      logit(fixef(endo.model1)[1] + fixef(endo.model1)[2]*seq(0,1,0.01)),
-#      lwd=4,col="blue")
+#      lwd=4,col="cornflowerblue")
 #lines(seq(0,1,0.01),
 #      logit((fixef(endo.model1)[1] + fixef(endo.model1)[3]) + fixef(endo.model1)[2]*seq(0,1,0.01)),
 #      lwd=4,col="red")
@@ -126,16 +126,16 @@ AICtab(endo.model.14.0,endo.model.14.1,endo.model.14.2,weights=T)
 plot(AGHY1415$lib_freq_t,
      AGHY1415$lib_freq_t1,type="n")
 points(AGHY1415$lib_freq_t[AGHY1415$water=="Control"],
-       AGHY1415$lib_freq_t1[AGHY1415$water=="Control"],pch=21,bg="red")
+       AGHY1415$lib_freq_t1[AGHY1415$water=="Control"],pch=21,bg="firebrick")
 points(AGHY1415$lib_freq_t[AGHY1415$water=="Add"],
-       AGHY1415$lib_freq_t1[AGHY1415$water=="Add"],pch=21,bg="blue")
+       AGHY1415$lib_freq_t1[AGHY1415$water=="Add"],pch=21,bg="cornflowerblue")
 abline(0,1)
 lines(seq(0,1,0.01),
       logit(coef(endo.model.14.2)[1] + (coef(endo.model.14.2)[2]*seq(0,1,0.01))),
-      col = "blue",lwd=4)
+      col = "cornflowerblue",lwd=4)
 lines(seq(0,1,0.01),
       logit(coef(endo.model.14.2)[1] + coef(endo.model.14.2)[3] + (coef(endo.model.14.2)[2]+ coef(endo.model.14.2)[4]*seq(0,1,0.01))),
-                          col = "red",lwd=4)
+                          col = "firebrick",lwd=4)
 
 
 
@@ -154,16 +154,16 @@ abline(0,1)
 plot(AGHY1516$lib_freq_t,
      AGHY1516$lib_freq_t1,type="n")
 points(AGHY1516$lib_freq_t[AGHY1516$water=="Control"],
-       AGHY1516$lib_freq_t1[AGHY1516$water=="Control"],pch=21,bg="red")
+       AGHY1516$lib_freq_t1[AGHY1516$water=="Control"],pch=21,bg="firebrick")
 points(AGHY1516$lib_freq_t[AGHY1516$water=="Add"],
-       AGHY1516$lib_freq_t1[AGHY1516$water=="Add"],pch=21,bg="blue")
+       AGHY1516$lib_freq_t1[AGHY1516$water=="Add"],pch=21,bg="cornflowerblue")
 abline(0,1)
 lines(seq(0,1,0.01),
       logit(coef(endo.model.15.2)[1] + (coef(endo.model.15.2)[2]*seq(0,1,0.01))),
-      col = "blue",lwd=4)
+      col = "cornflowerblue",lwd=4)
 lines(seq(0,1,0.01),
       logit(coef(endo.model.15.2)[1] + coef(endo.model.15.2)[3] + (coef(endo.model.15.2)[2]+ coef(endo.model.15.2)[4]*seq(0,1,0.01))),
-      col = "red",lwd=4) ## this one doesn't look right to me (?)
+      col = "firebrick",lwd=4) ## this one doesn't look right to me (?)
 
 
 
