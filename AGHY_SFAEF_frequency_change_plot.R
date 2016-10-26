@@ -32,10 +32,13 @@ AGHY.plots<-read.xlsx("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SF
 AGHY.immunoblot<-read.xlsx("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project/AGHY_SFAEF_life_history_expt.xlsx",
                            sheetName="Endophyte Survey")
 
+AGHY.immunoblot<-AGHY.immunoblot[AGHY.immunoblot$year_t ==AGHY.immunoblot$strip,]
 
+## match the agrinostic strip data to the year collected
+AGHY.1<-AGHY.immunoblot[which(AGHY.immunoblot$year_t == (AGHY.immunoblot$strip)),]
 
-## apply function to get plot-level frequency
-AGHY<-ddply(AGHY.immunoblot, c("year_t","plot"), summarize, 
+## Get the total E plus seeds scored per plot
+AGHY<-ddply(AGHY.1, c("year_t","plot"), summarize, 
             total = length(agri_liberal),
             E_plus_liberal = sum(agri_liberal),
             E_plus_conservative = sum(agri_conservative))
