@@ -10,15 +10,20 @@ library(plyr)
 library(dplyr)
 library(lme4)
 library(bbmle)
-logit<-function(x){exp(x)/(1+exp(x))}
+library(R2jags)
+library(mcmcplots)
+invlogit<-function(x){exp(x)/(1+exp(x))}
 
+
+## Tom's directory (laptop)
+setwd("C:/Users/tm9/Dropbox/Research Projects/Endophytes/AGHY Nacogdoches experiment/AGHY_SFAEF_Project")
 
 ## (Tom) read in AGHY plot info
-AGHY.plots<-read.xlsx("D:\\Dropbox\\Lab Documents\\Documents\\Grass\\SFAEF life history experiment\\Data\\AGHY_SFAEF_life_history_expt.xlsx",
+AGHY.plots<-read.xlsx("AGHY_SFAEF_life_history_expt.xlsx",
                            sheetName="Plot-level data")
 
 ## (Tom) read in AGHY agrinostics survey
-AGHY.immunoblot<-read.xlsx("D:\\Dropbox\\Lab Documents\\Documents\\Grass\\SFAEF life history experiment\\Data\\AGHY_SFAEF_life_history_expt.xlsx",
+AGHY.immunoblot<-read.xlsx("AGHY_SFAEF_life_history_expt.xlsx",
                            sheetName="Endophyte Survey")
 
 ## (Marion) set working directory
@@ -27,18 +32,20 @@ setwd("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project")
 ## (Marion) read in AGHY plot info 
 AGHY.plots<-read.xlsx("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project/AGHY_SFAEF_life_history_expt.xlsx",
                       sheetName="Plot-level data")
+## drop a few problem plots...these were planted incorrectly but we continued data collection by mistake
+AGHY.plots<-AGHY.plots[AGHY.plots$plot!=143 & AGHY.plots$plot!=211,]
 
 ## (Marion) read in AGHY agrinostics survey
 AGHY.immunoblot<-read.xlsx("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project/AGHY_SFAEF_life_history_expt.xlsx",
                            sheetName="Endophyte Survey")
 
-AGHY.immunoblot<-AGHY.immunoblot[AGHY.immunoblot$year_t ==AGHY.immunoblot$strip,]
-
 ## match the agrinostic strip data to the year collected
-AGHY.1<-AGHY.immunoblot[which(AGHY.immunoblot$year_t == (AGHY.immunoblot$strip)),]
+AGHY.immunoblot<-AGHY.immunoblot[AGHY.immunoblot$year_t ==AGHY.immunoblot$strip,]
+## check that we dropped the 2014 strips from 2015 data
+which(AGHY.immunoblot$year_t != (AGHY.immunoblot$strip))
 
 ## Get the total E plus seeds scored per plot
-AGHY<-ddply(AGHY.1, c("year_t","plot"), summarize, 
+AGHY<-ddply(AGHY.immunoblot, c("year_t","plot"), summarize, 
             total = length(agri_liberal),
             E_plus_liberal = sum(agri_liberal),
             E_plus_conservative = sum(agri_conservative))
@@ -51,9 +58,9 @@ AGHY$lib_freq<-AGHY$E_plus_liberal/AGHY$total
 AGHY.merge<-merge(AGHY.plots,AGHY,by="plot")
 
 
-
 ## select the relevant columns
-AGHY.new<-AGHY.merge[, c(1,4,6,9,10,13:14)]
+AGHY.new<-AGHY.merge[, c("plot","water","target_init_freq",
+                         "year_t","total","con_freq","lib_freq")]
 ## copy this dataframe into a new one so that year_t1 and the frequencies can be labeled
 AGHY.freq.1<-AGHY.new
 ## create the year_t1 column from the year_t column
@@ -71,13 +78,111 @@ names(AGHY.new)[names(AGHY.new) == "lib_freq"]<- "lib_freq_t1"
 
 
 ## New data frame with years t and t+1 and their frequencies 
-AGHY.total<-merge(AGHY.freq.1, AGHY.new[,c(1,5:8)], by= c("plot", "year_t1"))
+AGHY.total<-merge(AGHY.freq.1, AGHY.new[,c("plot","total_scored_t1","con_freq_t1","lib_freq_t1","year_t1")], by= c("plot", "year_t1"))
 ## re-organizing the columns so they make sense visually 
 AGHY.total<-AGHY.total[,c(1,3:8,2,9:11)]
 
+### Visualize 2013/14 endo freq change, fit Bayesian model to it
+
+AGHY1314<-subset(AGHY.merge,year_t==2014)
+AGHY1314$freq_t1_liberal<-AGHY1314$E_plus_liberal / AGHY1314$total
+plot(AGHY1314$target_init_freq,
+     AGHY1314$freq_t1_liberal)
+abline(0,1)
+
+#### Bayesian model for plot frequency change 13/14
+## define data for Bayes
+y<-AGHY1314$E_plus_liberal
+init_freq<-AGHY1314$target_init_freq
+N.obs<-length(y)
+plot<-order(AGHY1314$plot)
+#plots<-unique(plot)
+N.plots<-length((plot))
+x.levels<-seq(0,1,0.01)
+N.x.levels<-length(x.levels)
+N.samples<-AGHY1314$total
+
+sink("AGHY1314_endochange.txt")
+cat("
+    model{
+    
+    ## Priors
+    beta0.mean~dnorm(0,0.001)   ##hyperprior for intercept beta0
+    sigma0~dunif(0,1000)
+    tau.sigma0<-1/(sigma0*sigma0)
+    
+    beta1.mean~dnorm(0,0.001)   ##hyperprior for slope beta1
+    sigma1~dunif(0,1000)
+    tau.sigma1<-1/(sigma1*sigma1)
+    
+    for(i in 1:N.plots){      ##plot means
+    beta0[i]~dnorm(beta0.mean,tau.sigma0)
+    beta1[i]~dnorm(beta1.mean,tau.sigma1)
+    }
+    
+    ## Likelihood
+    for(i in 1:N.obs){
+    logit(p[i])<-beta0[plot[i]]+beta1[plot[i]]*init_freq[i]
+    y[i]~dbinom(p[i],N.samples[i])
+    }
+    
+    ## Prediction
+    beta0.pred~dnorm(beta0.mean,tau.sigma0)
+    beta1.pred~dnorm(beta1.mean,tau.sigma1)
+    
+    for(i in 1:N.x.levels){
+    y.pred[i]<-exp(beta0.pred+beta1.pred*x.levels[i])/(1+exp(beta0.pred+beta1.pred*x.levels[i]))
+    }
+    
+    }##end model
+    ",fill=T)
+sink()
 
 
+## bundle data
+jag.data<-list(y=y,
+               init_freq=init_freq,
+               plot=plot,
+               N.plots=N.plots,
+               N.obs=N.obs,
+               x.levels=x.levels,
+               N.x.levels=N.x.levels,
+               N.samples=N.samples)
 
+## Inits function
+inits<-function(){list(beta0=rnorm(N.plots,0,2),
+                       beta1=rnorm(N.plots,0,2),
+                       beta0.mean=rnorm(1,0,5),
+                       beta1.mean=rnorm(1,0,5),
+                       sigma0=rlnorm(1),
+                       sigma1=rlnorm(1))}
+
+## Params to estimate
+parameters<-c("beta0.mean","beta1.mean","y.pred")
+
+
+## MCMC settings
+ni<-15000
+nb<-5000
+nt<-10
+nc<-3
+
+## run JAGS
+AGHY1314.out<-jags(data=jag.data,inits=inits,parameters.to.save=parameters,model.file="AGHY1314_endochange.txt",
+                      n.thin=nt,n.chains=nc,n.burnin=nb,n.iter=ni,DIC=T,working.directory=getwd())
+
+mcmcplot(AGHY1314.out)
+
+## plots Bayes fit against data
+plot(AGHY1314$target_init_freq,
+     AGHY1314$freq_t1_liberal)
+abline(0,1)
+lines(x.levels,
+      invlogit(AGHY1314.out$BUGSoutput$mean$beta0.mean + AGHY1314.out$BUGSoutput$mean$beta1.mean*x.levels),lwd=4,col="red")
+lines(x.levels,AGHY1314.out$BUGSoutput$summary[4:104,"2.5%"],type="l",lwd=2,col="red")
+lines(x.levels,AGHY1314.out$BUGSoutput$summary[4:104,"97.5%"],type="l",lwd=2,col="red")
+
+str(AGHY1314.out)
 
 ### example analysis for 2013/2014 change
 #AGHY1314<-subset(AGHY.merge,year_t==2014)

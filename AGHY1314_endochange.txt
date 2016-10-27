@@ -1,0 +1,33 @@
+
+    model{
+    
+    ## Priors
+    beta0.mean~dnorm(0,0.001)   ##hyperprior for intercept beta0
+    sigma0~dunif(0,1000)
+    tau.sigma0<-1/(sigma0*sigma0)
+    
+    beta1.mean~dnorm(0,0.001)   ##hyperprior for slope beta1
+    sigma1~dunif(0,1000)
+    tau.sigma1<-1/(sigma1*sigma1)
+    
+    for(i in 1:N.plots){      ##plot means
+    beta0[i]~dnorm(beta0.mean,tau.sigma0)
+    beta1[i]~dnorm(beta1.mean,tau.sigma1)
+    }
+    
+    ## Likelihood
+    for(i in 1:N.obs){
+    logit(p[i])<-beta0[plot[i]]+beta1[plot[i]]*init_freq[i]
+    y[i]~dbinom(p[i],N.samples[i])
+    }
+    
+    ## Prediction
+    beta0.pred~dnorm(beta0.mean,tau.sigma0)
+    beta1.pred~dnorm(beta1.mean,tau.sigma1)
+    
+    for(i in 1:N.x.levels){
+    y.pred[i]<-exp(beta0.pred+beta1.pred*x.levels[i])/(1+exp(beta0.pred+beta1.pred*x.levels[i]))
+    }
+    
+    }##end model
+    
