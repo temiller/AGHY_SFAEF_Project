@@ -113,16 +113,19 @@ cat("
     ## random effect of plot, only affects intercept and consistent across years and trts
     sigma0~dunif(0,1000)
     tau.sigma0<-1/(sigma0*sigma0)
+
     for(i in 1:N.plots){      ##plot means
-    ran.beta0[i]~dnorm(0,tau.sigma0)
+    ran.beta0.14[i]~dnorm(0,tau.sigma0)
+    ran.beta0.15[i]~dnorm(0,tau.sigma0)
+    ran.beta0.16[i]~dnorm(0,tau.sigma0)
     }
     
     ## Likelihood
     ## expected E+ freq for each plot
     for(i in 1:N.plots){
-    logit(p.14[i])<-beta0.mean.14[water[i]]+ran.beta0[i]+beta1.14[water[i]]*init_freq[i]
-    logit(p.15[i])<-beta0.mean.15[water[i]]+ran.beta0[i]+beta1.15[water[i]]*p.14[i]
-    logit(p.16[i])<-beta0.mean.16[water[i]]+ran.beta0[i]+beta1.16[water[i]]*p.15[i]
+    logit(p.14[i])<-beta0.mean.14[water[i]]+ran.beta0.14[i]+beta1.14[water[i]]*init_freq[i]
+    logit(p.15[i])<-beta0.mean.15[water[i]]+ran.beta0.15[i]+beta1.15[water[i]]*p.14[i]
+    logit(p.16[i])<-beta0.mean.16[water[i]]+ran.beta0.16[i]+beta1.16[water[i]]*p.15[i]
     }
 
     ## sample likelihood oversubplots for 1314 transition
@@ -203,8 +206,7 @@ jag.data<-list(N.trt=N.trt,
                N.x.levels=N.x.levels)
 
 ## Inits function
-inits<-function(){list(ran.beta0=rnorm(N.plots,0,2),
-                       beta0.mean.14=rnorm(2,0,2),
+inits<-function(){list(beta0.mean.14=rnorm(2,0,2),
                        beta1.14=rnorm(2,0,2),
                        beta0.mean.15=rnorm(2,0,2),
                        beta1.15=rnorm(2,0,2),
@@ -298,16 +300,19 @@ AGHY.plot.freq<-ddply(merge(AGHY.immunoblot,AGHY.plots,by="plot"), c("year_t","n
 AGHY.plot.freq$E_plus_freq<-AGHY.plot.freq$E_plus_liberal/AGHY.plot.freq$total
 
 ## compare the Bayes' latent state estimate to the observed plot freq for 2014 and 2015
-posterior.plot.freq<-data.frame(cbind(1:N.plots,AGHY.endochange.out$BUGSoutput$mean$p.14,AGHY.endochange.out$BUGSoutput$mean$p.15))
-names(posterior.plot.freq)<-c("newplot","p14","p15")
+posterior.plot.freq<-data.frame(cbind(1:N.plots,AGHY.endochange.out$BUGSoutput$mean$p.14,AGHY.endochange.out$BUGSoutput$mean$p.15,AGHY.endochange.out$BUGSoutput$mean$p.16))
+names(posterior.plot.freq)<-c("newplot","p14","p15","p16")
 AGHY.plot.freq<-merge(AGHY.plot.freq,posterior.plot.freq,by="newplot")
 
-par(mfrow=c(2,1))
+par(mfrow=c(3,1))
 plot(AGHY.plot.freq$E_plus_freq[AGHY.plot.freq$year_t==2014],
      AGHY.plot.freq$p14[AGHY.plot.freq$year_t==2014])
 abline(0,1)
 plot(AGHY.plot.freq$E_plus_freq[AGHY.plot.freq$year_t==2015],
      AGHY.plot.freq$p15[AGHY.plot.freq$year_t==2015])
+abline(0,1)
+plot(AGHY.plot.freq$E_plus_freq[AGHY.plot.freq$year_t==2016],
+     AGHY.plot.freq$p16[AGHY.plot.freq$year_t==2016])
 abline(0,1)
 ## OK looks like the latent state estimation is doing a good job
 

@@ -1,0 +1,58 @@
+
+    model{
+    ## Priors
+    ## parameters for fixed effects of year and trt on intercept and slope
+    for(i in 1:N.trt){
+    beta0.mean.14[i]~dnorm(0,0.001)   ##hyperprior for intercept beta0
+    beta1.14[i]~dnorm(0,0.001)   ##prior for slope beta1
+
+    beta0.mean.15[i]~dnorm(0,0.001)   ##hyperprior for intercept beta0
+    beta1.15[i]~dnorm(0,0.001)   ##prior for slope beta1
+
+    beta0.mean.16[i]~dnorm(0,0.001)   ##hyperprior for intercept beta0
+    beta1.16[i]~dnorm(0,0.001)   ##prior for slope beta1
+    }
+
+    ## random effect of plot, only affects intercept and consistent across years and trts
+    sigma0~dunif(0,1000)
+    tau.sigma0<-1/(sigma0*sigma0)
+
+    for(i in 1:N.plots){      ##plot means
+    ran.beta0.14[i]~dnorm(0,tau.sigma0)
+    ran.beta0.15[i]~dnorm(0,tau.sigma0)
+    ran.beta0.16[i]~dnorm(0,tau.sigma0)
+    }
+    
+    ## Likelihood
+    ## expected E+ freq for each plot
+    for(i in 1:N.plots){
+    logit(p.14[i])<-beta0.mean.14[water[i]]+ran.beta0.14[i]+beta1.14[water[i]]*init_freq[i]
+    logit(p.15[i])<-beta0.mean.15[water[i]]+ran.beta0.15[i]+beta1.15[water[i]]*p.14[i]
+    logit(p.16[i])<-beta0.mean.16[water[i]]+ran.beta0.16[i]+beta1.16[water[i]]*p.15[i]
+    }
+
+    ## sample likelihood oversubplots for 1314 transition
+    for(i in 1:N.obs.14){
+    y.14[i]~dbinom(p.14[y.14.plot[i]],N.samples.14[i])
+    }
+    ## sample likelihood oversubplots for 1415 transition
+    for(i in 1:N.obs.15){
+    y.15[i]~dbinom(p.15[y.15.plot[i]],N.samples.15[i])
+    }
+    ## sample likelihood oversubplots for 1415 transition
+    for(i in 1:N.obs.16){
+    y.16[i]~dbinom(p.16[y.16.plot[i]],N.samples.16[i])
+    }
+
+    ## Prediction
+    for(i in 1:N.x.levels){
+    Eplus14.add.pred[i]<-exp(beta0.mean.14[1]+beta1.14[1]*x.levels[i])/(1+exp(beta0.mean.14[1]+beta1.14[1]*x.levels[i]))
+    Eplus14.control.pred[i]<-exp(beta0.mean.14[2]+beta1.14[2]*x.levels[i])/(1+exp(beta0.mean.14[2]+beta1.14[2]*x.levels[i]))
+    Eplus15.add.pred[i]<-exp(beta0.mean.15[1]+beta1.15[1]*x.levels[i])/(1+exp(beta0.mean.15[1]+beta1.15[1]*x.levels[i]))
+    Eplus15.control.pred[i]<-exp(beta0.mean.15[2]+beta1.15[2]*x.levels[i])/(1+exp(beta0.mean.15[2]+beta1.15[2]*x.levels[i]))
+    Eplus16.add.pred[i]<-exp(beta0.mean.16[1]+beta1.16[1]*x.levels[i])/(1+exp(beta0.mean.16[1]+beta1.16[1]*x.levels[i]))
+    Eplus16.control.pred[i]<-exp(beta0.mean.16[2]+beta1.16[2]*x.levels[i])/(1+exp(beta0.mean.16[2]+beta1.16[2]*x.levels[i]))
+    }
+
+    }##end model
+    
