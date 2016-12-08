@@ -24,6 +24,15 @@ AGHY.plots<-read.xlsx("AGHY_SFAEF_life_history_expt.xlsx",
 ## (Tom) read in AGHY agrinostics survey
 AGHY.immunoblot<-read.xlsx("AGHY_SFAEF_life_history_expt.xlsx",
                            sheetName="Endophyte Survey")
+## Read in subplot data
+AGHY.subplots<-read.xlsx("AGHY_SFAEF_life_history_expt.xlsx",
+                      sheetName="Subplot-level data")
+
+## Read in AGHY recruit data
+AGHY.recruits<-read.xlsx("AGHY_SFAEF_life_history_expt.xlsx",
+                         sheetName="Plant-level data recruits")
+
+str(AGHY.recruits)
 #######################################################################################
 ## (Marion) set working directory
 setwd("C:/Users/Marion Donald/Dropbox/Rice/Projects/AGHY/AGHY_SFAEF_Project")
@@ -67,39 +76,28 @@ AGHY$lib_freq<-AGHY$E_plus_liberal/AGHY$total
 AGHY.merge<-merge(AGHY.plots,AGHY,by="plot")
 AGHY.merge$lib_freq<-AGHY.merge$E_plus_liberal/AGHY.merge$total
 
-
-## select the relevant columns
-AGHY.new<-AGHY.merge[, c("plot","water","target_init_freq",
-                         "year_t","total","con_freq","lib_freq")]
-## copy this dataframe into a new one so that year_t1 and the frequencies can be labeled
-AGHY.freq.1<-AGHY.new
-## create the year_t1 column from the year_t column
-AGHY.freq.1$year_t1<-AGHY.freq.1$year_t+1
-## rename the year_t frequencies
-names(AGHY.freq.1)[names(AGHY.freq.1) == "con_freq"]<- "con_freq_t"
-names(AGHY.freq.1)[names(AGHY.freq.1) == "lib_freq"]<- "lib_freq_t"
-names(AGHY.freq.1)[names(AGHY.freq.1)=="total"]<-"total_scored_t"
-## assign the year t to the year t1 to match with the AGHY.freq.1 dataframe (and do the same with total seeds scored)
-AGHY.new$year_t1<-AGHY.new$year_t
-names(AGHY.new)[names(AGHY.new) == "total"]<-"total_scored_t1"
-## rename the year_t1 frequencies
-names(AGHY.new)[names(AGHY.new) == "con_freq"]<- "con_freq_t1"
-names(AGHY.new)[names(AGHY.new) == "lib_freq"]<- "lib_freq_t1"
-
-
-## New data frame with years t and t+1 and their frequencies 
-AGHY.total<-merge(AGHY.freq.1, AGHY.new[,c("plot","total_scored_t1","con_freq_t1","lib_freq_t1","year_t1")], by= c("plot", "year_t1"))
-## re-organizing the columns so they make sense visually 
-AGHY.total<-AGHY.total[,c(1,3:8,2,9:11)]
+## Now merge in subplot counts
+## rename year for the merge
+AGHY.subplots$year_t<-AGHY.subplots$year
+AGHY.merge<-merge(AGHY.merge,AGHY.subplots,by=c("plot","subplot","year_t"))
 
 ## Bayesian model for endo frequency change
 
-sink("AGHY_endochange.txt")
+sink("AGHY_endochange_flowering.txt")
 cat("
     model{
     ## Priors
     ## parameters for fixed effects of year and trt on intercept and slope
     for(i in 1:N.trt){
+
+    ## Priors for flowering probability
+    Ep_beta0_pf.14[i]~dnorm(0,0.001)
+    Em_beta0_pf.14[i]~dnorm(0,0.001)
+    Ep_beta0_pf.15[i]~dnorm(0,0.001)
+    Em_beta0_pf.15[i]~dnorm(0,0.001)
+    Ep_beta0_pf.16[i]~dnorm(0,0.001)
+    Em_beta0_pf.16[i]~dnorm(0,0.001)
+
     beta0.mean.14[i]~dnorm(0,0.001)   ##hyperprior for intercept beta0
     beta1.14[i]~dnorm(0,0.001)   ##prior for slope beta1
 
@@ -113,20 +111,35 @@ cat("
     ## random effect of plot, only affects intercept and consistent across years and trts
     sigma0~dunif(0,1000)
     tau.sigma0<-1/(sigma0*sigma0)
+    sigma.pf~dunif(0,1000)
+    tau.sigma.pf<-1/(sigma.pf*sigma.pf)
 
     for(i in 1:N.plots){      ##plot means
     ran.beta0.14[i]~dnorm(0,tau.sigma0)
     ran.beta0.15[i]~dnorm(0,tau.sigma0)
     ran.beta0.16[i]~dnorm(0,tau.sigma0)
+    ran.pf.14[i]~dnorm(0,tau.sigma.pf)
+    ran.pf.15[i]~dnorm(0,tau.sigma.pf)
+    ran.pf.16[i]~dnorm(0,tau.sigma.pf)
     }
-    
+
     ## Likelihood
     ## expected E+ freq for each plot
     for(i in 1:N.plots){
     logit(p.14[i])<-beta0.mean.14[water[i]]+ran.beta0.14[i]+beta1.14[water[i]]*init_freq[i]
     logit(p.15[i])<-beta0.mean.15[water[i]]+ran.beta0.15[i]+beta1.15[water[i]]*p.14[i]
     logit(p.16[i])<-beta0.mean.16[water[i]]+ran.beta0.16[i]+beta1.16[water[i]]*p.15[i]
-    }
+    
+    ## flowering probability
+    logit(Ep_pr_flow.14[i]) <- Ep_beta0_pf.14[water[i]] + ran.pf.14[i]
+    logit(Em_pr_flow.14[i]) <- Em_beta0_pf.14[water[i]] + ran.pf.14[i]
+
+    logit(Ep_pr_flow.15[i]) <- Ep_beta0_pf.15[water[i]] + ran.pf.15[i]
+    logit(Em_pr_flow.15[i]) <- Em_beta0_pf.15[water[i]] + ran.pf.15[i]
+
+    logit(Ep_pr_flow.16[i]) <- Ep_beta0_pf.16[water[i]] + ran.pf.16[i]
+    logit(Em_pr_flow.16[i]) <- Em_beta0_pf.16[water[i]] + ran.pf.16[i]
+}
 
     ## sample likelihood oversubplots for 1314 transition
     for(i in 1:N.obs.14){
@@ -150,6 +163,36 @@ cat("
     Eplus16.add.pred[i]<-exp(beta0.mean.16[1]+beta1.16[1]*x.levels[i])/(1+exp(beta0.mean.16[1]+beta1.16[1]*x.levels[i]))
     Eplus16.control.pred[i]<-exp(beta0.mean.16[2]+beta1.16[2]*x.levels[i])/(1+exp(beta0.mean.16[2]+beta1.16[2]*x.levels[i]))
     }
+
+    ## Estimation of endo-specific flowering probability
+    for(i in 1:N.obs.14.flowering){
+    pF.14[i] <- Ep_pr_flow.14[y.14.plot.flowering[i]]*p.14[y.14.plot.flowering[i]] + Em_pr_flow.14[y.14.plot.flowering[i]]*(1-p.14[y.14.plot.flowering[i]])
+    obs.flowering.14[i]~dbinom(pF.14[i],total.plants.14[i])
+    }
+    for(i in 1:N.obs.15.flowering){
+    pF.15[i] <- Ep_pr_flow.15[y.15.plot.flowering[i]]*p.15[y.15.plot.flowering[i]] + Em_pr_flow.15[y.15.plot.flowering[i]]*(1-p.15[y.15.plot.flowering[i]])
+    obs.flowering.15[i]~dbinom(pF.15[i],total.plants.15[i])
+    }
+    for(i in 1:N.obs.16.flowering){
+    pF.16[i] <- Ep_pr_flow.16[y.16.plot.flowering[i]]*p.16[y.16.plot.flowering[i]] + Em_pr_flow.16[y.16.plot.flowering[i]]*(1-p.16[y.16.plot.flowering[i]])
+    obs.flowering.16[i]~dbinom(pF.16[i],total.plants.16[i])
+    }
+
+    ## derived quantity for endo-specific flowering prob
+    logit(Ep.flower.control.14)<-Ep_beta0_pf.14[2]
+    logit(Ep.flower.add.14)<-Ep_beta0_pf.14[1]
+    logit(Em.flower.control.14)<-Em_beta0_pf.14[2]
+    logit(Em.flower.add.14)<-Em_beta0_pf.14[1]
+
+    logit(Ep.flower.control.15)<-Ep_beta0_pf.15[2]
+    logit(Ep.flower.add.15)<-Ep_beta0_pf.15[1]
+    logit(Em.flower.control.15)<-Em_beta0_pf.15[2]
+    logit(Em.flower.add.15)<-Em_beta0_pf.15[1]
+
+    logit(Ep.flower.control.16)<-Ep_beta0_pf.16[2]
+    logit(Ep.flower.add.16)<-Ep_beta0_pf.16[1]
+    logit(Em.flower.control.16)<-Em_beta0_pf.16[2]
+    logit(Em.flower.add.16)<-Em_beta0_pf.16[1]
 
     }##end model
     ",fill=T)
@@ -183,6 +226,34 @@ N.samples.16<-AGHY.merge$total[AGHY.merge$year_t==2016]
 N.obs.16<-length(y.16)
 y.16.plot<-AGHY.merge$newplot[AGHY.merge$year_t==2016]
 
+## data for flowering probability
+total.plants.14<-AGHY.merge$spring_flowering_recruit_count_per_subplot[AGHY.merge$year_t==2014]+AGHY.merge$spring_vegetative_recruit_count_per_subplot[AGHY.merge$year_t==2014]
+obs.flowering.14<-AGHY.merge$spring_flowering_recruit_count_per_subplot[AGHY.merge$year_t==2014]
+total.plants.15<-AGHY.merge$spring_flowering_recruit_count_per_subplot[AGHY.merge$year_t==2015]+AGHY.merge$spring_vegetative_recruit_count_per_subplot[AGHY.merge$year_t==2015]
+obs.flowering.15<-AGHY.merge$spring_flowering_recruit_count_per_subplot[AGHY.merge$year_t==2015]
+total.plants.16<-AGHY.merge$spring_flowering_recruit_count_per_subplot[AGHY.merge$year_t==2016]+AGHY.merge$spring_vegetative_recruit_count_per_subplot[AGHY.merge$year_t==2016]
+obs.flowering.16<-AGHY.merge$spring_flowering_recruit_count_per_subplot[AGHY.merge$year_t==2016]
+
+## deal with the NA problem
+flowering14.NAs<-which(is.na(total.plants.14))
+total.plants.14<-total.plants.14[-flowering14.NAs]
+obs.flowering.14<-obs.flowering.14[-flowering14.NAs]
+y.14.plot.flowering<-y.14.plot[-flowering14.NAs]
+N.obs.14.flowering<-length(total.plants.14)
+
+flowering15.NAs<-which(is.na(total.plants.15))
+total.plants.15<-total.plants.15[-flowering15.NAs]
+obs.flowering.15<-obs.flowering.15[-flowering15.NAs]
+y.15.plot.flowering<-y.15.plot[-flowering15.NAs]
+N.obs.15.flowering<-length(total.plants.15)
+
+flowering16.NAs<-which(is.na(total.plants.16))
+total.plants.16<-total.plants.16[-flowering16.NAs]
+obs.flowering.16<-obs.flowering.16[-flowering16.NAs]
+y.16.plot.flowering<-y.16.plot[-flowering16.NAs]
+N.obs.16.flowering<-length(total.plants.16)
+
+## stuff for prediction
 x.levels<-seq(0,1,0.01)
 N.x.levels<-length(x.levels)
 
@@ -202,6 +273,18 @@ jag.data<-list(N.trt=N.trt,
                N.samples.16=N.samples.16,
                N.obs.16=N.obs.16,
                y.16.plot=y.16.plot,
+               total.plants.14=total.plants.14,
+               obs.flowering.14=obs.flowering.14,
+               y.14.plot.flowering=y.14.plot.flowering,
+               N.obs.14.flowering=N.obs.14.flowering,
+               total.plants.15=total.plants.15,
+               obs.flowering.15=obs.flowering.15,
+               y.15.plot.flowering=y.15.plot.flowering,
+               N.obs.15.flowering=N.obs.15.flowering,
+               total.plants.16=total.plants.16,
+               obs.flowering.16=obs.flowering.16,
+               y.16.plot.flowering=y.16.plot.flowering,
+               N.obs.16.flowering=N.obs.16.flowering,
                x.levels=x.levels,
                N.x.levels=N.x.levels)
 
@@ -212,17 +295,27 @@ inits<-function(){list(beta0.mean.14=rnorm(2,0,2),
                        beta1.15=rnorm(2,0,2),
                        beta0.mean.16=rnorm(2,0,2),
                        beta1.16=rnorm(2,0,2),
-                       sigma0=rlnorm(1))}
+                       sigma0=rlnorm(1),
+                       Em_beta0_pf.14=rnorm(2,0,2),
+                       Ep_beta0_pf.14=rnorm(2,0,2),
+                       Em_beta0_pf.15=rnorm(2,0,2),
+                       Ep_beta0_pf.15=rnorm(2,0,2),
+                       Em_beta0_pf.16=rnorm(2,0,2),
+                       Ep_beta0_pf.16=rnorm(2,0,2))}
 
 ## Params to estimate
 parameters<-c("beta0.mean.14","beta1.14",
               "beta0.mean.15","beta1.15",
               "beta0.mean.16","beta1.16",
-              "p.14","p.15","p.16",
-              "Eplus14.add.pred","Eplus14.control.pred",
-              "Eplus15.add.pred","Eplus15.control.pred",
-              "Eplus16.add.pred","Eplus16.control.pred")
-
+              "Ep.flower.control.14","Ep.flower.add.14",
+              "Em.flower.control.14","Em.flower.add.14",
+              "Ep.flower.control.15","Ep.flower.add.15",
+              "Em.flower.control.15","Em.flower.add.15",
+              "Ep.flower.control.16","Ep.flower.add.16",
+              "Em.flower.control.16","Em.flower.add.16",
+              "p.14","p.15","p.16")
+#
+#,
 
 ## MCMC settings
 ni<-15000
@@ -231,8 +324,9 @@ nt<-10
 nc<-3
 
 ## run JAGS
-AGHY.endochange.out<-jags(data=jag.data,inits=inits,parameters.to.save=parameters,model.file="AGHY_endochange.txt",
+AGHY.endochange.out<-jags(data=jag.data,inits=inits,parameters.to.save=parameters,model.file="AGHY_endochange_flowering.txt",
                       n.thin=nt,n.chains=nc,n.burnin=nb,n.iter=ni,DIC=T,working.directory=getwd())
+
 mcmcplot(AGHY.endochange.out)
 
 ## append latent state estimates of plot frequency to AGHY.plots data frame
@@ -282,7 +376,20 @@ points(AGHY.plots$p.15[AGHY.plots$water=="Control"],
        AGHY.plots$p.16[AGHY.plots$water=="Control"],col="red",cex=2)
 
 
+### total change 13-16
+win.graph()
+plot(x.levels,x.levels,type="n")
+abline(0,1,col="gray")
+points(AGHY.plots$target_init_freq[AGHY.plots$water=="Add"],
+       AGHY.plots$p.15[AGHY.plots$water=="Add"],col="blue",cex=2)
+points(AGHY.plots$target_init_freq[AGHY.plots$water=="Control"],
+       AGHY.plots$p.15[AGHY.plots$water=="Control"],col="red",cex=2)
 
+
+hist(AGHY.plots$p.16[AGHY.plots$water=="Add"],col="blue")
+hist(AGHY.plots$p.16[AGHY.plots$water=="Control"],add=T,col="red")
+
+boxplot(p.16~water,data=AGHY.plots)
 
 
 
@@ -470,3 +577,31 @@ abline(0,1)
 #hist(AGHY1516$lib_freq_t1[AGHY1516$water=="Add"])
 #hist(AGHY1516$lib_freq_t1[AGHY1516$water=="Control"])
 #dev.off()
+
+## I think this is trash????
+
+
+## select the relevant columns
+AGHY.new<-AGHY.merge[, c("plot","water","target_init_freq",
+                         "year_t","total","con_freq","lib_freq")]
+## copy this dataframe into a new one so that year_t1 and the frequencies can be labeled
+AGHY.freq.1<-AGHY.new
+## create the year_t1 column from the year_t column
+AGHY.freq.1$year_t1<-AGHY.freq.1$year_t+1
+## rename the year_t frequencies
+names(AGHY.freq.1)[names(AGHY.freq.1) == "con_freq"]<- "con_freq_t"
+names(AGHY.freq.1)[names(AGHY.freq.1) == "lib_freq"]<- "lib_freq_t"
+names(AGHY.freq.1)[names(AGHY.freq.1)=="total"]<-"total_scored_t"
+## assign the year t to the year t1 to match with the AGHY.freq.1 dataframe (and do the same with total seeds scored)
+AGHY.new$year_t1<-AGHY.new$year_t
+names(AGHY.new)[names(AGHY.new) == "total"]<-"total_scored_t1"
+## rename the year_t1 frequencies
+names(AGHY.new)[names(AGHY.new) == "con_freq"]<- "con_freq_t1"
+names(AGHY.new)[names(AGHY.new) == "lib_freq"]<- "lib_freq_t1"
+
+
+## New data frame with years t and t+1 and their frequencies 
+AGHY.total<-merge(AGHY.freq.1, AGHY.new[,c("plot","total_scored_t1","con_freq_t1","lib_freq_t1","year_t1")], by= c("plot", "year_t1"))
+## re-organizing the columns so they make sense visually 
+AGHY.total<-AGHY.total[,c(1,3:8,2,9:11)]
+
