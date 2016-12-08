@@ -2,7 +2,7 @@
 ## Authors: Tom Miller and Marion Donald
 ## Purpose: Develop models for AGHY endophyte frequency change 
 ## Date Started: September 8, 2016
-## Date Updated: October 4, 2016
+## Date Updated: Dercember 8,2016 
 ##########################################################################
 
 library(xlsx)
